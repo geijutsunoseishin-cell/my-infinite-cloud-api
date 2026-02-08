@@ -1,9 +1,11 @@
 import os
 import shutil
 import asyncio
+import traceback
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import FileResponse, HTMLResponse
 from pyrogram import Client
+from pyrogram.errors import PyrogramError
 
 app = FastAPI(title="Infinite Cloud API")
 
@@ -22,30 +24,25 @@ tg_app = Client(
     in_memory=True 
 )
 
-# --- INTERFAZ VISUAL ---
-# Esta es la única función para "/"
 @app.get("/", response_class=HTMLResponse)
 async def read_index():
     try:
         with open("index.html", "r", encoding="utf-8") as f:
             return f.read()
     except FileNotFoundError:
-        return """
-        <body style='font-family:sans-serif; text-align:center; padding-top:50px;'>
-            <h1>✅ API Online</h1>
-            <p>Pero no encontré el archivo <b>index.html</b> en tu repositorio de GitHub.</p>
-            <p>Endpoints disponibles: <a href='/docs'>/docs</a></p>
-        </body>
-        """
+        return "<h1>API Online</h1><p>Falta el archivo index.html en el repositorio.</p>"
 
-# --- ENDPOINT PARA SUBIR ---
+# --- ENDPOINT PARA SUBIR CON ERROR DETALLADO ---
 @app.post("/upload/")
 async def upload_to_telegram(file: UploadFile = File(...)):
     temp_path = f"temp_{file.filename}"
+    
     try:
+        # Paso 1: Guardar localmente
         with open(temp_path, "wb") as buffer:
             shutil.copyfileobj(file.file, buffer)
 
+        # Paso 2: Intentar conexión y envío
         async with tg_app:
             sent_msg = await tg_app.send_document(
                 chat_id=int(CHAT_ID),
@@ -58,8 +55,17 @@ async def upload_to_telegram(file: UploadFile = File(...)):
             "filename": file.filename,
             "telegram_id": sent_msg.id
         }
+
+    except PyrogramError as e:
+        # Error específico de Telegram (ID inválido, bot sin permisos, etc.)
+        print(f"Error de Telegram: {e}")
+        raise HTTPException(status_code=500, detail=f"Error de Telegram: {type(e).__name__} - {str(e)}")
+    
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        # Error de sistema o de código
+        print(f"Error Interno: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=f"Error Crítico: {str(e)}")
+    
     finally:
         if os.path.exists(temp_path):
             os.remove(temp_path)
@@ -86,9 +92,8 @@ async def download_from_telegram(message_id: int):
     except Exception as e:
         if os.path.exists(download_path):
             os.remove(download_path)
-        raise HTTPException(status_code=500, detail=str(e))
+        raise HTTPException(status_code=500, detail=f"Error en descarga: {str(e)}")
 
-# --- LIMPIEZA POST-ENVÍO ---
 async def delete_after_send(path: str):
     await asyncio.sleep(60) 
     if os.path.exists(path):
