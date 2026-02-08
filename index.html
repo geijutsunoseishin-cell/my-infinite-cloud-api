@@ -1,41 +1,194 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-    <title>Mi Nube Infinita</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nube Infinita | Dashboard</title>
     <style>
-        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #121212; color: white; }
-        .card { background: #1e1e1e; padding: 2rem; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: center; }
-        input { margin: 1rem 0; }
-        button { background: #0088cc; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
-        #status { margin-top: 1rem; color: #aaa; }
+        :root {
+            --primary: #0088cc;
+            --primary-hover: #00aaff;
+            --bg: #0f0f0f;
+            --card-bg: #1a1a1a;
+            --text: #ffffff;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background: linear-gradient(-45deg, #0f0f0f, #1a1a1a, #002b44, #0f0f0f);
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+            color: var(--text);
+            overflow: hidden;
+        }
+
+        @keyframes gradient {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 2.5rem;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.7);
+            text-align: center;
+            width: 100%;
+            max-width: 400px;
+            border: 1px solid rgba(255,255,255,0.05);
+            backdrop-filter: blur(10px);
+            transform: translateY(0);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        h2 { margin-bottom: 1.5rem; font-weight: 300; letter-spacing: 1px; }
+
+        .upload-area {
+            border: 2px dashed rgba(255,255,255,0.2);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .upload-area:hover {
+            border-color: var(--primary);
+            background: rgba(0, 136, 204, 0.05);
+        }
+
+        input[type="file"] { display: none; }
+
+        label { cursor: pointer; display: block; padding: 10px; }
+
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 30px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            width: 100%;
+            box-shadow: 0 4px 15px rgba(0, 136, 204, 0.3);
+        }
+
+        button:hover {
+            background: var(--primary-hover);
+            transform: scale(1.02);
+            box-shadow: 0 6px 20px rgba(0, 136, 204, 0.4);
+        }
+
+        button:active { transform: scale(0.98); }
+
+        /* Barra de Progreso */
+        .progress-container {
+            display: none;
+            margin-top: 20px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+            height: 8px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            width: 0%;
+            height: 100%;
+            background: var(--primary);
+            transition: width 0.4s ease;
+            box-shadow: 0 0 10px var(--primary);
+        }
+
+        #status {
+            margin-top: 15px;
+            font-size: 0.9rem;
+            color: #aaa;
+            min-height: 20px;
+        }
+
+        .success-icon { color: #4caf50; font-size: 1.2rem; }
     </style>
 </head>
 <body>
+
     <div class="card">
-        <h2>Subir a Telegram Cloud</h2>
-        <input type="file" id="fileInput">
-        <br>
-        <button onclick="uploadFile()">Enviar a la Nube</button>
+        <h2>Infinite Cloud</h2>
+        
+        <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+            <label for="fileInput" id="fileLabel">📁 Seleccionar archivo</label>
+            <input type="file" id="fileInput" onchange="updateFileName()">
+        </div>
+
+        <button id="uploadBtn" onclick="uploadFile()">Subir a la Nube</button>
+
+        <div class="progress-container" id="progContainer">
+            <div class="progress-bar" id="progBar"></div>
+        </div>
+
         <p id="status"></p>
     </div>
 
     <script>
+        function updateFileName() {
+            const input = document.getElementById('fileInput');
+            const label = document.getElementById('fileLabel');
+            if (input.files[0]) {
+                label.innerText = "📄 " + input.files[0].name;
+            }
+        }
+
         async function uploadFile() {
             const fileInput = document.getElementById('fileInput');
             const status = document.getElementById('status');
-            if (!fileInput.files[0]) return alert("Selecciona un archivo");
+            const btn = document.getElementById('uploadBtn');
+            const progBar = document.getElementById('progBar');
+            const progContainer = document.getElementById('progContainer');
+
+            if (!fileInput.files[0]) return alert("Por favor, elige un archivo primero.");
 
             const formData = new FormData();
             formData.append('file', fileInput.files[0]);
 
-            status.innerText = "Subiendo... (esto puede tardar)";
-            
+            // UI Reset
+            btn.disabled = true;
+            btn.innerText = "Procesando...";
+            progContainer.style.display = "block";
+            progBar.style.width = "30%"; // Progreso simulado inicial
+            status.innerText = "Enviando a Telegram...";
+
             try {
-                const response = await fetch('/upload/', { method: 'POST', body: formData });
+                const response = await fetch('/upload/', {
+                    method: 'POST',
+                    body: formData
+                });
+
                 const result = await response.json();
-                status.innerHTML = `✅ Éxito. ID: <b>${result.telegram_id}</b>`;
+
+                if (response.ok) {
+                    progBar.style.width = "100%";
+                    status.innerHTML = `<span class="success-icon">✔</span> ¡Completado!<br>ID: <b>${result.telegram_id}</b>`;
+                    btn.innerText = "Subir otro archivo";
+                } else {
+                    throw new Error(result.detail || "Error desconocido");
+                }
             } catch (e) {
-                status.innerText = "❌ Error al subir";
+                status.innerText = "❌ " + e.message;
+                btn.innerText = "Reintentar";
+                progBar.style.backgroundColor = "#ff4444";
+            } finally {
+                btn.disabled = false;
             }
         }
     </script>
