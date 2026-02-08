@@ -4,6 +4,7 @@ from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.responses import FileResponse
 from pyrogram import Client
 import asyncio
+from fastapi.responses import HTMLResponse # Asegúrate de que esta línea esté arriba con los imports
 
 app = FastAPI(title="Infinite Cloud API")
 
@@ -96,6 +97,15 @@ async def download_from_telegram(message_id: int):
         raise HTTPException(status_code=500, detail=str(e))
 
 # Función auxiliar para borrar el archivo de Render después de enviarlo al usuario
+
+
+@app.get("/", response_class=HTMLResponse)
+async def read_index():
+    try:
+        with open("index.html", "r", encoding="utf-8") as f:
+            return f.read()
+    except FileNotFoundError:
+        return "<h1>API Activa</h1><p>Archivo index.html no encontrado en el repositorio.</p>"
 async def delete_after_send(path: str):
     await asyncio.sleep(60) # Espera 1 minuto para asegurar que se envió
     if os.path.exists(path):
