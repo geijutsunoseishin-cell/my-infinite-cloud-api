@@ -93,7 +93,7 @@ async def download_from_telegram(message_id: int):
         if os.path.exists(download_path):
             os.remove(download_path)
         raise HTTPException(status_code=500, detail=f"Error en descarga: {str(e)}")
-
+#Comment
 async def delete_after_send(path: str):
     await asyncio.sleep(60) 
     if os.path.exists(path):
