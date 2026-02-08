@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mi Nube Infinita</title>
+    <style>
+        body { font-family: sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; background: #121212; color: white; }
+        .card { background: #1e1e1e; padding: 2rem; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); text-align: center; }
+        input { margin: 1rem 0; }
+        button { background: #0088cc; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+        #status { margin-top: 1rem; color: #aaa; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>Subir a Telegram Cloud</h2>
+        <input type="file" id="fileInput">
+        <br>
+        <button onclick="uploadFile()">Enviar a la Nube</button>
+        <p id="status"></p>
+    </div>
+
+    <script>
+        async function uploadFile() {
+            const fileInput = document.getElementById('fileInput');
+            const status = document.getElementById('status');
+            if (!fileInput.files[0]) return alert("Selecciona un archivo");
+
+            const formData = new FormData();
+            formData.append('file', fileInput.files[0]);
+
+            status.innerText = "Subiendo... (esto puede tardar)";
+            
+            try {
+                const response = await fetch('/upload/', { method: 'POST', body: formData });
+                const result = await response.json();
+                status.innerHTML = `✅ Éxito. ID: <b>${result.telegram_id}</b>`;
+            } catch (e) {
+                status.innerText = "❌ Error al subir";
+            }
+        }
+    </script>
+</body>
+</html>
